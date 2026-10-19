@@ -14,7 +14,8 @@ type Occurrence struct {
 	EndByte   int64  `json:"end_byte"`
 }
 
-// Finding deliberately contains neither the secret nor its surrounding text.
+// Finding contains the captured secret values without surrounding source text.
+// Compound credentials are represented in Secret as newline-separated captures.
 type Finding struct {
 	ID          string       `json:"id"`
 	RuleID      string       `json:"rule_id"`

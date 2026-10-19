@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -26,7 +27,7 @@ func writeFixture(t *testing.T, root, name, data string) string {
 
 func fakeToken() string { return "ghp_" + "0123456789abcdefghijklmnopqrstuvwxyz" }
 
-func TestRealEngineRedactionAndDeduplication(t *testing.T) {
+func TestRealEngineSecretValuesAndDeduplication(t *testing.T) {
 	root := t.TempDir()
 	token := fakeToken()
 	first := writeFixture(t, root, "a.env", "# fixture\nключ="+token+"\n")
@@ -45,6 +46,9 @@ func TestRealEngineRedactionAndDeduplication(t *testing.T) {
 			continue
 		}
 		found = true
+		if finding.Secret != token {
+			t.Fatal("finding must contain the complete captured token")
+		}
 		if len(finding.Occurrences) != 2 {
 			t.Fatalf("want one finding across two files, got %+v", finding)
 		}
@@ -61,11 +65,11 @@ func TestRealEngineRedactionAndDeduplication(t *testing.T) {
 		if err := WriteReport(&buf, report, format); err != nil {
 			t.Fatal(err)
 		}
-		if strings.Contains(buf.String(), token) || strings.Contains(buf.String(), "ключ=") {
-			t.Fatal("report leaked secret or context")
+		if !strings.Contains(buf.String(), token) {
+			t.Fatal("report omitted the captured token")
 		}
-		if !strings.Contains(buf.String(), "[REDACTED]") {
-			t.Fatal("missing redaction")
+		if strings.Contains(buf.String(), "ключ=") || strings.Contains(buf.String(), "[REDACTED]") {
+			t.Fatal("report must include captured values without source context or masking")
 		}
 		if format == "json" && !json.Valid(buf.Bytes()) {
 			t.Fatal("invalid JSON")
@@ -76,7 +80,7 @@ func TestRealEngineRedactionAndDeduplication(t *testing.T) {
 		t.Fatal(err)
 	}
 	if report.Findings[0].ID == second.Findings[0].ID {
-		t.Fatal("finding ID must not be a reusable secret hash")
+		t.Fatal("finding IDs must be scoped to a single scan")
 	}
 }
 
@@ -102,6 +106,48 @@ func TestSkipPolicy(t *testing.T) {
 		if len(f.Occurrences) != 1 || !strings.HasSuffix(f.Occurrences[0].Path, "good.env") {
 			t.Fatalf("scanned excluded content: %+v", f)
 		}
+	}
+}
+
+type compoundEngine struct{}
+
+func (compoundEngine) scan(content []byte) ([]detection, error) {
+	return []detection{{
+		ruleID: "fixture.credentials", ruleName: "Compound credential",
+		groups: [][]byte{[]byte("admin"), []byte("pass\"word\nsecond-line\x1b[31m")},
+		start:  0, end: int64(len(content)),
+	}}, nil
+}
+
+func (compoundEngine) close() error { return nil }
+
+func TestCompoundSecretValuesArePreserved(t *testing.T) {
+	path := writeFixture(t, t.TempDir(), "input.txt", "fixture content")
+	report, err := scanWithEngine(context.Background(), []string{path}, Options{MaxFileSize: 100}, compoundEngine{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "admin\npass\"word\nsecond-line\x1b[31m"
+	if len(report.Findings) != 1 || report.Findings[0].Secret != want {
+		t.Fatal("compound credentials must preserve every capture in order")
+	}
+	var buf bytes.Buffer
+	if err := WriteReport(&buf, report, "json"); err != nil {
+		t.Fatal(err)
+	}
+	var decoded Report
+	if err := json.Unmarshal(buf.Bytes(), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Findings[0].Secret != want {
+		t.Fatal("JSON must round-trip complete credential values")
+	}
+	buf.Reset()
+	if err := WriteReport(&buf, report, "text"); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), strconv.Quote(want)) || strings.ContainsRune(buf.String(), '\x1b') {
+		t.Fatal("text output must preserve values as quoted strings without executing terminal escapes")
 	}
 }
 

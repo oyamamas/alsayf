@@ -15,12 +15,12 @@ func WriteReport(w io.Writer, report Report, format string) error {
 	if format != "text" {
 		return fmt.Errorf("unsupported format %q (use text or json)", format)
 	}
-	// Quote paths and names so untrusted filenames cannot emit terminal escapes.
+	// Quote paths, names, and values so input cannot emit terminal escapes.
 	if _, err := fmt.Fprintf(w, "Local secrets scan: %d files, %d bytes, %d findings; complete=%t\n", report.FilesScanned, report.BytesScanned, len(report.Findings), report.Complete); err != nil {
 		return err
 	}
 	for _, f := range report.Findings {
-		if _, err := fmt.Fprintf(w, "\n%q (%q) [REDACTED]\n", f.RuleName, f.RuleID); err != nil {
+		if _, err := fmt.Fprintf(w, "\n%q (%q)\n  Secret: %q\n", f.RuleName, f.RuleID, f.Secret); err != nil {
 			return err
 		}
 		for _, o := range f.Occurrences {

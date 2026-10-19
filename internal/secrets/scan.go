@@ -242,7 +242,8 @@ func (s *scanState) scanFile(path string) {
 			idx = len(s.report.Findings)
 			s.findings[id] = idx
 			s.report.Findings = append(s.report.Findings, Finding{
-				ID: id, RuleID: m.ruleID, RuleName: m.ruleName, Secret: "[REDACTED]", Occurrences: []Occurrence{},
+				ID: id, RuleID: m.ruleID, RuleName: m.ruleName,
+				Secret: string(bytes.Join(m.groups, []byte("\n"))), Occurrences: []Occurrence{},
 			})
 		}
 		s.report.Findings[idx].Occurrences = append(s.report.Findings[idx].Occurrences, occ)
@@ -250,8 +251,7 @@ func (s *scanState) scanFile(path string) {
 }
 
 func (s *scanState) findingID(m detection) string {
-	// A fresh, undisclosed key per scan prevents exported identifiers from
-	// becoming reusable hashes for guessing low-entropy passwords offline.
+	// Identifiers are scoped to one scan and group identical capture values.
 	h := hmac.New(sha256.New, s.key[:])
 	for _, value := range append([][]byte{[]byte(m.ruleID)}, m.groups...) {
 		_ = binary.Write(h, binary.BigEndian, uint64(len(value)))

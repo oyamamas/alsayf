@@ -30,8 +30,23 @@ func TestCommands(t *testing.T) {
 		t.Fatal(err)
 	}
 	out, stderr, err := run(t, "scan", path, "--format", "json")
-	if err != nil || stderr != "" || !json.Valid([]byte(out)) || strings.Contains(out, token) || !strings.Contains(out, "[REDACTED]") {
+	if err != nil || stderr != "" || !json.Valid([]byte(out)) || !strings.Contains(out, token) || strings.Contains(out, "[REDACTED]") {
 		t.Fatalf("unexpected JSON scan output: %v %s %s", err, out, stderr)
+	}
+	var report struct {
+		Findings []struct {
+			Secret string `json:"secret"`
+		} `json:"findings"`
+	}
+	if err := json.Unmarshal([]byte(out), &report); err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Findings) == 0 || report.Findings[0].Secret != token {
+		t.Fatal("JSON must contain the complete captured secret")
+	}
+	out, stderr, err = run(t, "scan", path)
+	if err != nil || stderr != "" || !strings.Contains(out, token) || strings.Contains(out, "[REDACTED]") {
+		t.Fatal("default text output must contain the complete captured secret")
 	}
 	out, _, err = run(t, "scan", path, "--format", "json", "--fail-on-findings")
 	if err == nil || !json.Valid([]byte(out)) {

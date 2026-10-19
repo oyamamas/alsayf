@@ -37,7 +37,7 @@ func newScanCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&format, "format", "text", "Output format: text or json (both redact secrets)")
+	cmd.Flags().StringVar(&format, "format", "text", "Output format: text or json (both include full secret values)")
 	cmd.Flags().Int64Var(&opts.MaxFileSize, "max-file-size", secrets.DefaultMaxFileSize, "Maximum file size in bytes")
 	cmd.Flags().StringArrayVar(&opts.Exclude, "exclude", nil, "Exclude a filename, relative path, or absolute path glob; repeatable")
 	cmd.Flags().BoolVar(&failOnFindings, "fail-on-findings", false, "Return a nonzero exit code if secrets are detected")

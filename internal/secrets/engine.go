@@ -10,7 +10,7 @@ import (
 	"github.com/praetorian-inc/titus/pkg/types"
 )
 
-// Keep upstream match types and raw secret material inside this module.
+// Keep upstream match types inside this adapter; retain complete capture values.
 type detection struct {
 	ruleID, ruleName string
 	groups           [][]byte
