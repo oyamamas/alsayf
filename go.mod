@@ -4,6 +4,7 @@ go 1.26.2
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.43.0
+	github.com/OJ/gobuster/v3 v3.8.2
 	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/go-git/go-billy/v6 v6.0.0-20250627091229-31e2a16eef30
 	github.com/go-git/go-git/v6 v6.0.0-20250728093604-6aaf1933ecab
@@ -14,6 +15,7 @@ require (
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.9
+	github.com/urfave/cli/v2 v2.27.7
 	go.etcd.io/etcd/client/v2 v2.305.22
 	go.etcd.io/etcd/client/v3 v3.6.3
 	go.uber.org/zap v1.27.1
@@ -33,10 +35,12 @@ require (
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/flier/gohs v1.2.2 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
@@ -52,14 +56,19 @@ require (
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.18.3 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/paulmach/orb v0.12.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
+	github.com/pin/tftp/v3 v3.1.0 // indirect
 	github.com/pjbgf/sha1cd v0.4.0 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
+	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	go.etcd.io/etcd/api/v3 v3.6.3 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.6.3 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
@@ -70,9 +79,11 @@ require (
 	golang.org/x/crypto v0.49.0 // indirect
 	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/term v0.41.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/grpc v1.71.1 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
+	software.sslmate.com/src/go-pkcs12 v0.6.0 // indirect
 )

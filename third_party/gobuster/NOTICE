@@ -1,0 +1,20 @@
+Gobuster
+Source: https://github.com/OJ/gobuster
+Version: v3.8.2
+Revision: e8410cad6cacf08b82e2f610055f636f0be61c40
+License: Apache-2.0 (see LICENSE in this directory)
+
+Alsayf imports the seven upstream cli mode packages and their discovery engines
+through github.com/OJ/gobuster/v3, pinned in go.mod/go.sum. Upstream runtime
+sources are not copied or modified. The upstream LICENSE is preserved here.
+
+The local cmd/gobuster and internal/gobuster adapters create a fresh upstream
+command tree, preserve native flags, propagate the Alsayf cancellation context,
+and return CLI framework errors to the root command. They add argument, worker
+count, delay, and timeout validation before invoking mode handlers.
+
+The standalone upstream main function, its process exit handling, its global
+version-printer override, and its automatic GOMAXPROCS adjustment are not used.
+Upstream scan output uses process standard streams, and inherited logger fatal
+paths can terminate the process on output errors. Wordlists are supplied by the
+user and are not bundled or downloaded by Alsayf.

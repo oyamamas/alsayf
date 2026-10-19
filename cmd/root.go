@@ -6,20 +6,22 @@ import (
 	"os"
 	"os/signal"
 
-	"alsayf/cmd/clx"
-	secretscmd "alsayf/cmd/secrets"
 	"github.com/spf13/cobra"
 )
 
 func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "alsayf",
-		Short:             "A modular security toolkit",
+		Use:   "alsayf",
+		Short: "A modular security toolkit",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return cmd.Help()
+		},
 		SilenceUsage:      true,
 		SilenceErrors:     true,
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
-	cmd.AddCommand(secretscmd.NewCommand(), clx.NewCommand())
+	addModuleCommands(cmd)
 	return cmd
 }
 

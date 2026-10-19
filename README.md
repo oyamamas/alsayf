@@ -1,5 +1,7 @@
 # Third-party components
 
+- [Gobuster v3.8.2](https://github.com/OJ/gobuster/tree/v3.8.2): the upstream CLI command factories and matching discovery engines for `dir`, `dns`, `vhost`, `fuzz`, `s3`, `gcs`, and `tftp`, imported as Go packages under `alsayf gbuster`. Integration details and the upstream license are retained in [third_party/gobuster](third_party/gobuster/).
+- [urfave/cli v2](https://github.com/urfave/cli): Gobuster's native mode and option parsing, help, and CLI execution inside the module adapter.
 - [CloudExec](https://github.com/oyamamas/CloudExec/tree/7390f34e3987809320836b82dfc5b43853dfb306), based on [cotsom/CloudExec](https://github.com/cotsom/CloudExec): the twelve service commands, service modules, target helpers, and exporter secret-detection rules. Runtime sources are adapted into `cmd/clx` and `internal/clx`, with fresh command constructors and registration under `clx`. Source revision and adaptation notes are recorded in [third_party/cloudexec/NOTICE](third_party/cloudexec/NOTICE).
 - [pgx](https://github.com/jackc/pgx), [clickhouse-go](https://github.com/ClickHouse/clickhouse-go), [go-redis](https://github.com/redis/go-redis), [kafka-go](https://github.com/segmentio/kafka-go), [go-zookeeper](https://github.com/go-zookeeper/zk), and [etcd clients](https://github.com/etcd-io/etcd): CloudExec's service protocol clients.
 - [go-git](https://github.com/go-git/go-git) and [go-billy](https://github.com/go-git/go-billy): Git repository and filesystem operations used by CloudExec's GitLab runner module.
