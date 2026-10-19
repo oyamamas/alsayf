@@ -1,0 +1,21 @@
+CloudExec
+Source: https://github.com/oyamamas/CloudExec
+Upstream: https://github.com/cotsom/CloudExec
+Revision: 7390f34e3987809320836b82dfc5b43853dfb306
+Revision date: 2026-10-09
+
+Runtime command and internal package sources, including embedded exporter
+secret-detection rules, are adapted in cmd/clx and internal/clx. Source
+copyright notices are retained. Development templates and test fixtures
+are not included.
+
+Local adaptations:
+- Rewrite package/import paths for inclusion in the alsayf module.
+- Replace global command registration with fresh command constructors.
+- Register all twelve service commands beneath alsayf clx.
+- Validate shared CLI options before entering the upstream handlers.
+- Keep the exporters relay flag local to each command instance.
+- Correct the exported ServiceID field for Consul JSON decoding.
+
+No upstream LICENSE file is present in this source revision. This notice
+records provenance and does not introduce a new license for the source.

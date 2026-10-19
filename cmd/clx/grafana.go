@@ -1,0 +1,158 @@
+package clx
+
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	modules "alsayf/internal/clx/modules/grafana"
+	utils "alsayf/internal/clx/utils"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+)
+
+type GrafanaModule interface {
+	RunModule(target string, flags map[string]string)
+}
+
+var grafanadModules = map[string]GrafanaModule{
+	"datasource": modules.Datasource{},
+	"defcreds":   modules.Defcreds{},
+	"ssrf":       modules.Ssrf{},
+	// Add another modules here
+}
+
+// grafanaCmd represents the grafana command
+
+func checkGrafana(target string, wg *sync.WaitGroup, sem chan struct{}, flags map[string]string) {
+	defer func() {
+		<-sem
+		wg.Done()
+	}()
+
+	port, err := utils.SetPort(flags["port"], "3000")
+	if err != nil {
+		utils.Colorize(utils.ColorRed, err.Error())
+		return
+	}
+
+	creds := fmt.Sprintf("%s:%s", flags["user"], flags["password"])
+
+	if flags["timeout"] == "" {
+		flags["timeout"] = "3"
+	}
+	timeout, _ := strconv.Atoi(flags["timeout"])
+	client := http.Client{
+		Timeout: time.Duration(timeout) * time.Second,
+	}
+
+	//check grafana port
+	url := fmt.Sprintf("http://%s:%s", target, port)
+	// fmt.Println(url)
+
+	response, err := utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+	if err != nil {
+		return
+	}
+	defer response.Body.Close()
+	respBody, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		fmt.Printf("client: could not read response body: %s\n", err)
+	}
+
+	if !strings.Contains(string(respBody), "grafana") {
+		return
+	}
+
+	url = fmt.Sprintf("http://%s@%s:%s/api/datasources", creds, target, port)
+	response, err = utils.HttpRequest(url, http.MethodGet, []byte(""), client)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode == 200 {
+		if flags["user"] == "" && flags["password"] == "" {
+			utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana with public dashboards! (%s)\n", utils.ClearLine, target, port, creds))
+		}
+		utils.Colorize(utils.ColorGreen, fmt.Sprintf("%s[+] %s:%s - Grafana! (%s)\n", utils.ClearLine, target, port, creds))
+	} else {
+		utils.Colorize(utils.ColorBlue, fmt.Sprintf("%s[*] %s:%s - Grafana\n", utils.ClearLine, target, port))
+	}
+
+	if flags["module"] != "" {
+		if module, exists := grafanadModules[flags["module"]]; exists {
+			module.RunModule(target, flags)
+		} else {
+			fmt.Printf("Module \"%s\" not found. Available modules: %v\n", module, grafanadModules)
+			os.Exit(1)
+		}
+	}
+
+}
+
+func newGrafanaCommand() *cobra.Command {
+	grafanaCmd := &cobra.Command{
+		Use:   "grafana host/subnetwork/input-list",
+		Short: "discover & exploit Grafana",
+		Long: `Mode for discover & exploit Grafana
+Will scan and highlight all found hosts with grafana service.
+
+Modules:
+* datasources - displays a list of all available sources for the specified account
+* defcreds - try to authenticate with popular creds
+* ssrf - send http request to one target or all targets in network on behalf of Grafana`,
+		Run: func(cmd *cobra.Command, args []string) {
+			flags := make(map[string]string)
+			cmd.Flags().VisitAll(func(f *pflag.Flag) {
+				flags[f.Name] = f.Value.String()
+			})
+
+			targets, err := utils.GetTargets(flags, args)
+			if err != nil {
+				utils.Colorize(utils.ColorRed, err.Error())
+				return
+			}
+			// fmt.Println(targets)
+
+			//MAIN LOGIC
+			var wg sync.WaitGroup
+			var sem chan struct{}
+
+			//set threads
+			threads, err := strconv.Atoi(flags["threads"])
+			if err != nil {
+				fmt.Println("You have to set correct number of threads")
+				os.Exit(0)
+			}
+			sem = make(chan struct{}, threads)
+
+			progress := 0
+			for i, target := range targets {
+				wg.Add(1)
+				sem <- struct{}{}
+				go checkGrafana(target, &wg, sem, flags)
+				utils.ProgressBar(len(targets), i+1, &progress)
+			}
+			fmt.Println("")
+			wg.Wait()
+		},
+	}
+	grafanaCmd.Flags().IntP("threads", "t", 100, "Number of threads for scan")
+	grafanaCmd.Flags().StringP("port", "", "", "Grafana port")
+	grafanaCmd.Flags().StringP("user", "u", "", "Grafana user")
+	grafanaCmd.Flags().StringP("password", "p", "", "Grafana password")
+	grafanaCmd.Flags().StringP("inputlist", "i", "", "Input from list of hosts")
+	grafanaCmd.Flags().StringP("module", "M", "", "Choose module")
+	grafanaCmd.Flags().StringP("ssrf-target", "", "", "targets for ssrf module")
+	grafanaCmd.Flags().StringP("ssrf-port", "", "", "port for ssrf module")
+	grafanaCmd.Flags().StringP("timeout", "", "", "Count of seconds for waiting http response")
+	return grafanaCmd
+}
