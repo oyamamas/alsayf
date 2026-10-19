@@ -20,16 +20,16 @@ import (
 	"unicode/utf8"
 )
 
-const DefaultMaxFileSize int64 = 1 << 20 // 1 MiB, bounded before reading
+const DefaultMaxFileSize int64 = 100 << 20 // 100 MiB, matching Nosey Parker's default
 
 type Options struct {
 	MaxFileSize int64
 	Exclude     []string
 }
 
-// Scan scans local regular files only. Symlinks, special files, binary files,
-// .git metadata, and oversized files are reported as skipped. Git history is
-// deliberately not interpreted by this filesystem source.
+// Scan scans local regular files, including binary and non-UTF-8 content.
+// Symlinks, special files, .git metadata, and oversized files are reported as
+// skipped. Git history is not interpreted by this filesystem source.
 func Scan(ctx context.Context, paths []string, opts Options) (Report, error) {
 	if err := validateOptions(paths, opts); err != nil {
 		return Report{}, err
@@ -200,10 +200,6 @@ func (s *scanState) scanFile(path string) {
 	}
 	if int64(len(data)) > s.opts.MaxFileSize {
 		s.skip(path, "file exceeds max-file-size")
-		return
-	}
-	if bytes.IndexByte(data, 0) >= 0 || !utf8.Valid(data) {
-		s.skip(path, "binary or non-UTF-8 file")
 		return
 	}
 	if s.ctx.Err() != nil {

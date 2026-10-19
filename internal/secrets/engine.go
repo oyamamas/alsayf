@@ -50,18 +50,25 @@ func newEngine() (engine, error) {
 	if err != nil {
 		return nil, err
 	}
+	return newEngineWithRules(rules)
+}
+
+func newEngineWithRules(rules []*types.Rule) (engine, error) {
 	e := &titusEngine{}
 	// The top-level Titus API imports online validators and scoring clients.
 	// Import only the local matcher and embedded rule loader instead.
-	e.matcher, err = matcher.New(matcher.Config{
-		Rules:        rules,
-		ContextLines: 0,
+	// Use the raw matcher: matcher.New adds cross-rule suppression that merges
+	// different credentials sharing any capture (e.g. the same username with
+	// two passwords). It also adds heuristic filters absent from Nosey Parker's
+	// regex matching. Preserve matches here; group only identical rule/captures
+	// in scanState, never distinct secrets sharing a non-secret identifier.
+	m, err := matcher.NewPortableRegexp(rules, 0,
 		// Upstream diagnostics may contain input data. Never forward them.
-		WarnFunc: func(string, ...any) { e.warned.Store(true) },
-	})
+		func(string, ...any) { e.warned.Store(true) })
 	if err != nil {
 		return nil, errors.New("cannot initialize local detection engine")
 	}
+	e.matcher = m
 	return e, nil
 }
 
