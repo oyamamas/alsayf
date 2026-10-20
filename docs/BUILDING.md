@@ -106,7 +106,11 @@ alsayf weaponize nuclei --source-dir /path/to/alsayf \
 ```
 
 The default source repository is `oyamamas/alsayf`. `--repository owner/name`
-selects a fork; `GITHUB_TOKEN` optionally authenticates source downloads.
+selects a fork. Private repositories require `GITHUB_TOKEN` with read access to
+the source repository; anonymous archive requests can return HTTP 404 even for
+an existing commit. Git/SSH credentials used for `git push` do not authenticate
+these HTTPS requests. Prefer `--source-dir` when repository access credentials
+must not be placed on the administration host.
 A clean build with embedded revision requires no explicit ref. A build from
 modified sources requires an explicit `--source-dir` or `--ref` so local edits
 are not silently discarded. Source refs must contain the weaponize build
