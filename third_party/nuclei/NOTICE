@@ -1,0 +1,33 @@
+Nuclei
+Source: https://github.com/projectdiscovery/nuclei
+Version: v3.11.1
+Revision: a8c88feb4a1c8e961b7902534ce3af97e9d524a4
+License: MIT (see LICENSE in this directory)
+
+Alsayf imports the pinned public template parser, catalog/loader, protocols,
+input provider, and execution engine. Upstream runtime sources are not modified.
+The local internal/nuclei adapter's engine initialization follows the wiring in
+the upstream lib/sdk.go and lib/sdk_private.go, with an Alsayf command, output
+writer, and progress/error collector. The upstream license is preserved here.
+
+The SDK wrapper is not imported: v3.11.1 unconditionally invokes
+installer.NucleiSDKVersionCheck during SDK initialization even after the SDK's
+DisableUpdateCheck option. Alsayf initializes the public engine packages directly
+and does not import the SDK, installer, or internal CLI runner.
+
+Alsayf requires explicit local template/workflow paths, disables update checks,
+does not configure cloud uploads or reporting integrations, and supplies a
+disabled Interactsh client. Its catalog excludes template files containing
+Interactsh URL markers. Headless, code, self-contained, DAST, global-matcher,
+and file-template capabilities are not enabled. Template definitions are
+validated before scanning. Native template execution and matchers are retained.
+
+DNS uses supplied resolvers or addresses read from /etc/resolv.conf rather than
+the engine's built-in public resolver list. Native output events are serialized
+locally; extracted values are not masked. Configuration files follow Nuclei's
+NUCLEI_CONFIG_DIR setting. An absent local ignore file is initialized empty
+without downloading an upstream ignore list; an existing ignore file is kept.
+
+No nuclei-templates distribution, browser, or other runtime executable is bundled
+or automatically downloaded. Template contents determine assessment requests;
+disabling background services does not restrict arbitrary template destinations.

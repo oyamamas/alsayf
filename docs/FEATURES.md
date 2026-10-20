@@ -1,6 +1,6 @@
 # Feature snapshot
 
-Recorded on 2026-10-19.
+Recorded on 2026-10-20.
 
 Alsayf is a modular command-line security toolkit for legitimate administration
 and assessment of authorized systems. Commands and runtime code are separated
@@ -11,21 +11,26 @@ by module under `cmd/<module>` and `internal/<module>`.
 | Build | Output | Included commands | Measured size |
 | --- | --- | --- | --- |
 | `make core` | `bin/alsayf-core` | CLI core and help | 2.49 MiB |
-| `make full` | `bin/alsayf` | Core, `secrets`, `clx`, `gbuster` | 36.74 MiB |
+| `make full` | `bin/alsayf` | Core, `secrets`, `clx`, `gbuster`, `nuclei` | 123.95 MiB |
 
 Sizes are for stripped, pure-Go macOS arm64 builds on the development machine;
 other targets may differ. Both Make targets disable CGO by default.
 
 Plain `go build` produces the full toolkit. `go build -tags core` excludes all
-three modules from the executable's import graph. The core profile currently
+four modules from the executable's import graph. The core profile currently
 provides no scanning functionality or runtime module installation.
 
 Module tags can be combined with `core` to build a selected toolkit. For example,
 `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags core,gobuster -o bin/alsayf-gobuster .`
 builds only Gobuster, measuring 9.57 MiB on the same platform. Use
 `-tags core,secrets,gobuster` to include both secret scanning and Gobuster. The
-available module tags are `secrets`, `clx`, and `gobuster`; without `core`, all
+available module tags are `secrets`, `clx`, `gobuster`, and `nuclei`; without `core`, all
 modules remain enabled by default.
+
+`CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags core,nuclei -o bin/alsayf-nuclei .`
+builds only the Nuclei module, measuring 106.71 MiB on the same platform. To retain
+the other tools without Nuclei, select `-tags core,secrets,clx,gobuster`.
+That selected build currently measures 37.03 MiB on the same platform.
 
 Build an executable for the target OS and architecture before deployment. The
 target host does not need Go or source code; modules are already compiled in and
@@ -111,6 +116,55 @@ fuzz, and virtual host scenarios; a local UDP DNS resolver; stdin wordlists;
 file output; invalid options; and Ctrl+C cancellation. S3, GCS, and TFTP backend
 behavior was not exercised. Dependency isolation was checked for all eight module
 combinations.
+
+## Template-based assessment: `alsayf nuclei`
+
+Nuclei v3.11.1's public parser, catalog/loader, protocols, and execution engine
+are integrated under `cmd/nuclei` and `internal/nuclei`. The SDK wrapper and its
+unconditional version check are not imported. Template matching and execution
+use upstream implementations.
+
+- Explicit local template files/directories (`-t`) and workflows (`-w`). No
+  bundled templates, remote template source flags, or automatic downloads.
+- `--template-root` selects the local root for relative workflow references and
+  tag-based workflow selection. By default the first source directory (or its
+  containing directory for a file) is used.
+- Targets from repeated `-u`, a list file (`-l`), or stdin (`-l -`); duplicates
+  are removed before scanning.
+- Severity, tag, and template-ID filters; custom headers and variables.
+- Configurable template/target concurrency, request rate, timeout, and retries.
+- Text or JSONL findings, optional output file, and `--fail-on-findings`.
+  Extracted values are fully preserved.
+- `--list-templates` lists runnable templates without scanning targets.
+- Invalid templates fail validation before scanning. Cancellation, output errors,
+  and recorded request failures return an unsuccessful exit status.
+
+Example:
+
+```sh
+alsayf nuclei -u https://service.internal -t ./templates --severity high,critical --jsonl
+```
+
+Automatic updates, Interactsh, and cloud reporting are disabled. Template files
+containing Interactsh URL markers are excluded, including workflow children.
+Headless, code, self-contained, DAST, global-matcher, and file-template
+capabilities are not enabled. No browser or external Nuclei executable is needed.
+This is a focused Alsayf command, not a flag-for-flag copy of the upstream CLI.
+
+DNS uses `--resolver` addresses or `/etc/resolv.conf`; systems without that file
+must supply resolvers explicitly. The engine retains process-global protocol
+pools, so the supported CLI lifecycle is one scan per process. Configuration
+uses upstream `NUCLEI_CONFIG_DIR`; an absent ignore file is initialized empty
+without downloading one. Existing local ignore settings remain in effect.
+Template content can specify additional network destinations; disabling
+background integrations does not constitute a network sandbox.
+
+Integration checks use synthetic templates and loopback HTTP/DNS services, not
+real vulnerability targets. They cover matching/extraction, negative controls,
+filters, workflow execution, lists/stdin, output files, OAST exclusion, invalid
+templates/options, and cancellation. A local capture proxy checks for unintended
+update/OAST/cloud requests. Compile-time dependency isolation is checked for all
+sixteen module combinations.
 
 ## Module integration policy
 
