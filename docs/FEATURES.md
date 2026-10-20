@@ -10,15 +10,16 @@ by module under `cmd/<module>` and `internal/<module>`.
 
 | Build | Output | Included commands | Measured size |
 | --- | --- | --- | --- |
-| `make core` | `bin/alsayf-core` | CLI core and help | 2.49 MiB |
-| `make full` | `bin/alsayf` | Core, `secrets`, `clx`, `gbuster`, `nuclei`, `winrm` | 124.36 MiB |
+| `make core` | `bin/alsayf-core` | Core, `weaponize`, `version`, help | 6.73 MiB |
+| `make full` | `bin/alsayf` | Core, `secrets`, `clx`, `gbuster`, `nuclei`, `winrm` | 124.91 MiB |
 
 Sizes are for stripped, pure-Go macOS arm64 builds on the development machine;
 other targets may differ. Both Make targets disable CGO by default.
 
 Plain `go build` produces the full toolkit. `go build -tags core` excludes all
-five modules from the executable's import graph. The core profile currently
-provides no scanning functionality or runtime module installation.
+five modules from the executable's import graph. The core profile includes
+`weaponize`, `version`, and help. Native modules can be added by an on-host
+rebuild; external backend installation is not implemented.
 
 Module tags can be combined with `core` to build a selected toolkit. For example,
 `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags core,gobuster -o bin/alsayf-gobuster .`
@@ -40,9 +41,22 @@ Windows server interoperability still needs a live-host test.
 
 Build an executable for the target OS and architecture before deployment. The
 target host does not need Go or source code; modules are already compiled in and
-require no downloads. CloudExec commands connect to their selected infrastructure
-services. Its GitLab repository cloning module additionally requires the system
-`git` executable.
+require no downloads to run already compiled tools. Optional native weaponization
+can download build prerequisites. CloudExec commands connect to their selected
+infrastructure services. Its GitLab repository cloning module additionally
+requires the system `git` executable.
+
+## Native build workflows
+
+- `alsayf weaponize <module> [module...]` downloads matching sources and, if
+  needed, Go; builds the union of selected and already compiled native modules;
+  verifies the candidate before replacement; removes owned temporary build data.
+- `./builder` (Python 3.9+) selects tools and a target platform interactively,
+  bootstraps Go if necessary, and prepares a deployable executable.
+- `alsayf version --json` records source revision, modification state, platform,
+  compiler version, and enabled modules.
+- Local-source, retained-cache, offline, and explicit-output variants are
+  documented in [BUILDING.md](BUILDING.md), alongside manual Go commands.
 
 ## Local secret discovery: `alsayf secrets`
 
@@ -230,17 +244,18 @@ domain policy. Module dependency isolation is checked for all 32 combinations.
 
 Future integrations must remain separate modules with their own command
 constructor, isolated adapter/runtime code, pinned upstream dependencies, and
-compile-time inclusion through an independent module tag. Keep provenance and
-licenses in `third_party`; keep README limited to third-party attribution.
+compile-time inclusion through an independent module tag, and an entry in
+`internal/buildkit/modules.json` for builder/weaponize selection. Keep provenance
+and licenses in `third_party`. README contains the authorized-use notice,
+disclaimer, and third-party attribution; operational documentation lives in docs/.
 Large optional assets such as wordlists should remain outside the executable.
 
-This separation provides a foundation for selecting modules in a possible future
-`weaponize` build workflow. It does not install modules at runtime or require
-compilation on administration targets.
+Native modules can be selected with the interactive `builder` or added through
+`alsayf weaponize` on a host with build resources. See [BUILDING.md](BUILDING.md)
+for automatic downloads, manual compilation, platform behavior, and cleanup.
 
 ## Deferred backlog
 
-`alsayf weaponize <module>` is not implemented. Runtime source extraction,
-toolchain preparation, rebuilding, and executable replacement are deferred:
-administration targets may have neither Go nor internet access. Current
-deployment uses executables built in advance.
+External weaponization (prebuilt backends and their runtimes), ready-made
+offline build packs, and signed release manifests are deferred. Prepared builds
+remain available for hosts that cannot or should not compile tools locally.

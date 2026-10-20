@@ -22,6 +22,7 @@ func NewRootCommand() *cobra.Command {
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
 	addModuleCommands(cmd)
+	addBuildCommands(cmd)
 	return cmd
 }
 

@@ -1,0 +1,7 @@
+[
+  {"name":"secrets","command":"secrets","description":"Local secret discovery"},
+  {"name":"clx","command":"clx","description":"CloudExec infrastructure tools"},
+  {"name":"gobuster","command":"gbuster","description":"Gobuster discovery modes"},
+  {"name":"nuclei","command":"nuclei","description":"Nuclei local template engine"},
+  {"name":"winrm","command":"winrm","description":"Windows remote administration"}
+]
