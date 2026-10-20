@@ -1,0 +1,19 @@
+WinRM for Go
+Source: https://github.com/masterzen/winrm
+Version: v0.0.0-20261004123143-57b335310d59
+Revision: 57b335310d59 (Go module pseudo-version revision)
+License: Apache-2.0 (see LICENSE in this directory)
+
+Alsayf imports the pinned upstream WinRM/WinRS client, SOAP shell and command
+lifecycle, response parsing, NTLM authentication and message encryption, and
+PowerShell command encoding. Upstream runtime sources are not modified or copied.
+
+The cmd/winrm and internal/winrm adapters provide CLI commands, password sources,
+TLS options, socket-bound cancellation and timeouts, SOAP fault handling,
+stream/error propagation, UTF-8 PowerShell input, and bounded shell cleanup.
+Authentication exposed by this adapter is NTLM or Basic over HTTPS. Kerberos,
+CredSSP, certificate authentication, and PSRP runspaces are not exposed.
+
+No Evil-WinRM code, Ruby interpreter, external client executable, or Windows
+server components are bundled. The remote Windows WinRM service must already
+be configured; Alsayf does not change its authentication or firewall settings.

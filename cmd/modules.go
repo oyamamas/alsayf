@@ -7,4 +7,5 @@ func addModuleCommands(cmd *cobra.Command) {
 	addCloudExecCommand(cmd)
 	addGobusterCommand(cmd)
 	addNucleiCommand(cmd)
+	addWinRMCommand(cmd)
 }

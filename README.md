@@ -8,6 +8,7 @@
 | [CloudExec](https://github.com/oyamamas/CloudExec/tree/7390f34e3987809320836b82dfc5b43853dfb306), based on [cotsom/CloudExec](https://github.com/cotsom/CloudExec) | `alsayf clx` | Twelve service commands, service modules, target helpers, and exporter secret-detection rules, adapted into the toolkit. [Source and adaptation notes](third_party/cloudexec/NOTICE). |
 | [Gobuster v3.8.2](https://github.com/OJ/gobuster/tree/v3.8.2) | `alsayf gbuster` | Native CLI command factories and discovery engines for `dir`, `dns`, `vhost`, `fuzz`, `s3`, `gcs`, and `tftp`. [License and adaptation notes](third_party/gobuster/). |
 | [Nuclei v3.11.1](https://github.com/projectdiscovery/nuclei/tree/v3.11.1) | `alsayf nuclei` | Public template parser, catalog/loader, protocol implementations, and execution engine; local setup adapted from the upstream SDK. [License and adaptation notes](third_party/nuclei/NOTICE). |
+| [WinRM for Go](https://github.com/masterzen/winrm/tree/57b335310d59) | `alsayf winrm` | WinRM/WinRS SOAP client, shell and command lifecycle, NTLM authentication and message encryption, stream handling, and PowerShell command encoding. [License and adaptation notes](third_party/winrm/NOTICE). |
 
 ## Supporting libraries and rule sources
 
@@ -23,3 +24,4 @@
 - [yaml.v3](https://gopkg.in/yaml.v3): parsing Titus's embedded YAML rule definitions.
 - [gohs](https://github.com/flier/gohs) and [ahocorasick](https://github.com/cloudflare/ahocorasick): dependencies of Titus's optional accelerated matching backend; excluded from the default pure-Go build.
 - [mousetrap](https://github.com/inconshreveable/mousetrap): Windows shell-launch detection through Cobra.
+- [golang.org/x/term](https://pkg.go.dev/golang.org/x/term): hidden WinRM password input from a terminal. [Azure/go-ntlmssp](https://github.com/Azure/go-ntlmssp), [simplexml](https://github.com/masterzen/simplexml), and [goxpath](https://github.com/ChrisTrenkamp/goxpath): NTLM negotiation and SOAP XML processing through WinRM for Go.

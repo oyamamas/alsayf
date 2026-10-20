@@ -11,26 +11,32 @@ by module under `cmd/<module>` and `internal/<module>`.
 | Build | Output | Included commands | Measured size |
 | --- | --- | --- | --- |
 | `make core` | `bin/alsayf-core` | CLI core and help | 2.49 MiB |
-| `make full` | `bin/alsayf` | Core, `secrets`, `clx`, `gbuster`, `nuclei` | 123.95 MiB |
+| `make full` | `bin/alsayf` | Core, `secrets`, `clx`, `gbuster`, `nuclei`, `winrm` | 124.36 MiB |
 
 Sizes are for stripped, pure-Go macOS arm64 builds on the development machine;
 other targets may differ. Both Make targets disable CGO by default.
 
 Plain `go build` produces the full toolkit. `go build -tags core` excludes all
-four modules from the executable's import graph. The core profile currently
+five modules from the executable's import graph. The core profile currently
 provides no scanning functionality or runtime module installation.
 
 Module tags can be combined with `core` to build a selected toolkit. For example,
 `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags core,gobuster -o bin/alsayf-gobuster .`
 builds only Gobuster, measuring 9.57 MiB on the same platform. Use
 `-tags core,secrets,gobuster` to include both secret scanning and Gobuster. The
-available module tags are `secrets`, `clx`, `gobuster`, and `nuclei`; without `core`, all
+available module tags are `secrets`, `clx`, `gobuster`, `nuclei`, and `winrm`; without `core`, all
 modules remain enabled by default.
 
 `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags core,nuclei -o bin/alsayf-nuclei .`
 builds only the Nuclei module, measuring 106.71 MiB on the same platform. To retain
-the other tools without Nuclei, select `-tags core,secrets,clx,gobuster`.
-That selected build currently measures 37.03 MiB on the same platform.
+the earlier tools without Nuclei or WinRM, select `-tags core,secrets,clx,gobuster`.
+That selected build measured 37.03 MiB before the WinRM integration.
+
+`CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags core,winrm -o bin/alsayf-winrm .`
+builds the WinRM client alone, measuring approximately 7.41 MiB on macOS arm64.
+The client is pure Go and can run on macOS, Linux, or Windows while managing
+remote Windows hosts. Windows and Linux builds are compile-checked; actual
+Windows server interoperability still needs a live-host test.
 
 Build an executable for the target OS and architecture before deployment. The
 target host does not need Go or source code; modules are already compiled in and
@@ -114,7 +120,7 @@ the process on output errors.
 Validation covered help for all seven modes; local HTTP directory, extension,
 fuzz, and virtual host scenarios; a local UDP DNS resolver; stdin wordlists;
 file output; invalid options; and Ctrl+C cancellation. S3, GCS, and TFTP backend
-behavior was not exercised. Dependency isolation was checked for all eight module
+behavior was not exercised. Dependency isolation was checked for all 32 module
 combinations.
 
 ## Template-based assessment: `alsayf nuclei`
@@ -164,7 +170,61 @@ real vulnerability targets. They cover matching/extraction, negative controls,
 filters, workflow execution, lists/stdin, output files, OAST exclusion, invalid
 templates/options, and cancellation. A local capture proxy checks for unintended
 update/OAST/cloud requests. Compile-time dependency isolation is checked for all
-sixteen module combinations.
+32 module combinations.
+
+## Remote Windows administration: `alsayf winrm`
+
+WinRM for Go is integrated under `cmd/winrm` and `internal/winrm`, using WinRS
+SOAP shells and commands. No Ruby, Evil-WinRM, external WinRM executable, or
+local Windows installation is required on the client. The target Windows host
+must already have a reachable WinRM listener and grant the supplied account
+remote access. The module does not configure the remote service or firewall.
+
+- `exec '<command>'`: execute one CMD command, streaming stdout and stderr.
+- `powershell '<script>'` (alias `ps`): execute PowerShell code, a local UTF-8
+  script (`--file script.ps1`), or a script read from stdin (`--file -`). Scripts
+  are sent through the remote process's stdin, avoiding command-line size limits.
+  Script errors and the last native program's nonzero exit status fail the command.
+- `shell`: one persistent `cmd.exe /Q` process with line-oriented stdin and
+  streamed output. Working directory and environment survive between lines.
+  Type `exit` to finish. This is not a PTY or PSRP runspace; full-screen console
+  applications and Evil-WinRM's PowerShell completion are not provided.
+- NTLM authentication by default, including upstream WinRM message encryption.
+  Basic authentication is available with `--auth basic` over HTTPS only.
+- HTTPS on port 5986 by default, certificate verification, `--ca-cert`, and
+  `--tls-server-name`. `--insecure` explicitly disables certificate validation.
+  `--http` selects NTLM on port 5985; `--port` overrides either default.
+- Passwords from `--password`, `--password-env`, `--password-file`, the default
+  `ALSAYF_WINRM_PASSWORD` environment variable, or a hidden terminal prompt.
+  Explicit password sources are mutually exclusive. File input removes only
+  one trailing line ending and preserves other whitespace.
+- Network I/O timeout (`--request-timeout`, default 60s), optional overall
+  session timeout (`--timeout`), and Ctrl+C cancellation. Cleanup attempts to
+  delete the remote shell on a fresh connection, bounded by five seconds;
+  failed cleanup is reported. A lost connection cannot guarantee remote cleanup.
+- Nonzero remote exit codes, failed output/input, non-idle SOAP faults, and
+  authentication failures return an unsuccessful CLI status.
+
+Examples (password is prompted for or supplied through the environment):
+
+```sh
+alsayf winrm exec -H server.internal -u 'CONTOSO\admin' 'whoami /all'
+alsayf winrm ps -H server.internal -u 'CONTOSO\admin' 'Get-Service'
+alsayf winrm ps -H server.internal -u admin --file inventory.ps1
+alsayf winrm shell -H server.internal -u admin --ca-cert company-ca.pem
+```
+
+Kerberos, CredSSP, certificate authentication, PSRP sessions, and file-transfer
+commands are not exposed. CMD output retains the remote console encoding;
+the PowerShell adapter explicitly configures UTF-8 streams.
+
+Adapter validation uses a loopback HTTPS/SOAP server: streams, exit status,
+PowerShell input from all three sources, long scripts, shell input, password
+sources, TLS verification, idle and error faults, output failures, cancellation,
+and cleanup, with the race detector. Upstream loopback tests separately verify
+NTLM handshakes, message encryption, reauthentication, and custom dialing.
+These tests do not establish interoperability with every Windows version or
+domain policy. Module dependency isolation is checked for all 32 combinations.
 
 ## Module integration policy
 
